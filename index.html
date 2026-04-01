@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>QueerGO · 北京酷儿春游地图</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+SC:wght@300;400;500&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ══════════════════════════════════════
+       Y2K 变量系统
+    ══════════════════════════════════════ */
+    :root {
+      --bg:        #f2eeff;
+      --surface:   rgba(255, 255, 255, 0.92);
+      --surface2:  rgba(240, 235, 255, 0.7);
+      --border:    rgba(180, 160, 255, 0.25);
+      --text:      #1a0836;
+      --muted:     #7a6a9a;
+      --pink:      #FF2D9B;
+      --cyan:      #00CFFF;
+      --lime:      #AAFF00;
+      --purple:    #9B30FF;
+      --silver:    #c8c0e0;
+      --holo1:     #FFD6F0;
+      --holo2:     #D6EEFF;
+      --holo3:     #D6FFE8;
+      --r1: #FF3366; --r2: #FF8800; --r3: #FFE000;
+      --r4: #00CC44; --r5: #0088FF; --r6: #9933FF;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Noto Sans SC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ── 全息动画 ── */
+    @keyframes holo-shift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes sparkle {
+      0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+      50%       { opacity: 0.5; transform: scale(1.4) rotate(180deg); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-3px); }
+    }
+    @keyframes shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    @keyframes bounce-in {
+      0%   { transform: translate(-50%,-50%) scale(0.6); opacity: 0; }
+      60%  { transform: translate(-50%,-50%) scale(1.1); opacity: 1; }
+      100% { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+    }
+
+    /* ── 顶部悬浮卡片 ── */
+    #header {
+      position: fixed;
+      top: 12px; left: 12px; right: 12px;
+      z-index: 200;
+      background: var(--surface);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-radius: 20px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow:
+        0 4px 24px rgba(155, 48, 255, 0.15),
+        0 1px 0 rgba(255,255,255,0.9) inset;
+      border: 1.5px solid transparent;
+      background-clip: padding-box;
+      position: fixed; /* re-declare for stacking */
+    }
+
+    /* 全息边框 */
+    #header::before {
+      content: '';
+      position: absolute;
+      inset: -1.5px;
+      border-radius: 21px;
+      background: linear-gradient(135deg,
+        var(--r1), var(--r2), var(--r3),
+        var(--r4), var(--r5), var(--r6),
+        var(--r1));
+      background-size: 300% 300%;
+      animation: holo-shift 4s ease infinite;
+      z-index: -1;
+    }
+
+    .header-logo {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .site-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 18px;
+      letter-spacing: 0.06em;
+      line-height: 1;
+      background: linear-gradient(90deg,
+        var(--pink), var(--purple), var(--cyan), var(--pink));
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 3s linear infinite;
+    }
+
+    .site-sub {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      margin-top: 2px;
+    }
+
+    /* 装饰星星 */
+    .star {
+      font-size: 10px;
+      display: inline-block;
+      animation: sparkle 2s ease-in-out infinite;
+      color: var(--pink);
+      margin: 0 2px;
+    }
+    .star:nth-child(2) { animation-delay: 0.7s; color: var(--cyan); }
+    .star:nth-child(3) { animation-delay: 1.4s; color: var(--purple); }
+
+    /* 进度区 */
+    #progress-wrap { text-align: right; }
+
+    #progress-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 5px;
+      letter-spacing: 0.04em;
+    }
+
+    #progress-label strong {
+      color: var(--pink);
+      font-weight: 700;
+    }
+
+    #progress-bar {
+      width: 72px;
+      height: 6px;
+      background: rgba(155, 48, 255, 0.1);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-left: auto;
+      border: 1px solid rgba(155, 48, 255, 0.2);
+    }
+
+    #progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg,
+        var(--r1), var(--r2), var(--r3),
+        var(--r4), var(--r5), var(--r6));
+      background-size: 200% 100%;
+      border-radius: 99px;
+      transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: holo-shift 2s linear infinite;
+    }
+
+    /* ── 地图 ── */
+    #map {
+      width: 100%;
+      height: 100dvh;
+    }
+
+    /* ── 遮罩 ── */
+    #sheet-overlay {
+      position: fixed; inset: 0;
+      background: rgba(26, 8, 54, 0.4);
+      backdrop-filter: blur(2px);
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #sheet-overlay.active { opacity: 1; pointer-events: auto; }
+
+    /* ── 底部详情面板 ── */
+    #bottom-sheet {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 400;
+      background: var(--surface);
+      backdrop-filter: blur(30px) saturate(200%);
+      -webkit-backdrop-filter: blur(30px) saturate(200%);
+      border-radius: 28px 28px 0 0;
+      max-height: 85dvh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+      overscroll-behavior: contain;
+      box-shadow: 0 -4px 40px rgba(155, 48, 255, 0.2);
+    }
+
+    /* 全息顶部线 */
+    #bottom-sheet::before {
+      content: '';
+      display: block;
+      height: 3px;
+      background: linear-gradient(90deg,
+        var(--r1), var(--r2), var(--r3),
+        var(--r4), var(--r5), var(--r6));
+      background-size: 200% 100%;
+      animation: holo-shift 3s linear infinite;
+      border-radius: 3px 3px 0 0;
+    }
+
+    #bottom-sheet.open { transform: translateY(0); }
+
+    .sheet-handle {
+      width: 40px; height: 4px;
+      background: linear-gradient(90deg, var(--pink), var(--purple));
+      border-radius: 99px;
+      margin: 10px auto 0;
+      opacity: 0.4;
+    }
+
+    /* 图片区 */
+    .img-placeholder {
+      width: 100%;
+      height: 190px;
+      background: linear-gradient(135deg, var(--holo1), var(--holo2), var(--holo3));
+      background-size: 300% 300%;
+      animation: holo-shift 6s ease infinite;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      margin-top: 10px;
+    }
+    .img-placeholder svg { opacity: 0.4; color: var(--purple); }
+
+    /* 内容区 */
+    #sheet-content { padding: 18px 22px 44px; }
+
+    #sheet-era {
+      display: inline-block;
+      font-size: 10px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: var(--pink);
+      background: rgba(255, 45, 155, 0.08);
+      border: 1px solid rgba(255, 45, 155, 0.25);
+      border-radius: 99px;
+      padding: 3px 10px;
+      margin-bottom: 10px;
+    }
+
+    #sheet-name {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+
+    #sheet-address {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent, rgba(155,48,255,0.2), transparent);
+      margin: 14px 0;
+    }
+
+    #sheet-desc {
+      font-size: 14px;
+      line-height: 1.9;
+      color: #4a3a6a;
+      letter-spacing: 0.02em;
+    }
+
+    /* 按钮组 */
+    .btn-row { display: flex; gap: 10px; margin-top: 22px; }
+
+    .btn {
+      flex: 1;
+      padding: 14px 12px;
+      border-radius: 16px;
+      border: none;
+      font-family: 'Noto Sans SC', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      letter-spacing: 0.04em;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:active { transform: scale(0.96); }
+
+    /* 导航按钮：玻璃态 */
+    .btn-nav {
+      background: var(--surface2);
+      color: var(--purple);
+      border: 1.5px solid rgba(155, 48, 255, 0.25);
+      backdrop-filter: blur(10px);
+    }
+    .btn-nav:active { box-shadow: 0 0 0 3px rgba(155,48,255,0.15); }
+
+    /* 打卡按钮：渐变 */
+    .btn-checkin {
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 4px 16px rgba(255, 45, 155, 0.35);
+    }
+    .btn-checkin::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -60%;
+      width: 40%; height: 100%;
+      background: rgba(255,255,255,0.3);
+      transform: skewX(-20deg);
+      animation: shimmer 3s linear infinite;
+    }
+    .btn-checkin:active {
+      box-shadow: 0 2px 8px rgba(255,45,155,0.4);
+    }
+
+    .btn-checkin.disabled {
+      background: rgba(155, 48, 255, 0.08);
+      color: var(--silver);
+      box-shadow: none;
+      cursor: not-allowed;
+      border: 1.5px solid rgba(155,48,255,0.15);
+    }
+    .btn-checkin.disabled::after { display: none; }
+
+    .btn-checkin.done {
+      background: transparent;
+      color: var(--pink);
+      border: 1.5px solid rgba(255,45,155,0.4);
+      box-shadow: none;
+    }
+    .btn-checkin.done::after { display: none; }
+
+    #distance-hint {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 10px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── 导航选择弹窗 ── */
+    #nav-modal {
+      position: fixed; inset: 0;
+      z-index: 500;
+      display: flex;
+      align-items: flex-end;
+      background: rgba(26, 8, 54, 0.45);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    #nav-modal.show { opacity: 1; pointer-events: auto; }
+
+    #nav-panel {
+      width: 100%;
+      background: var(--surface);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border-radius: 28px 28px 0 0;
+      padding: 20px 22px 44px;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+      box-shadow: 0 -4px 40px rgba(155, 48, 255, 0.2);
+    }
+    #nav-modal.show #nav-panel { transform: translateY(0); }
+
+    .nav-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--purple);
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .nav-option {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 0;
+      border-top: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+      border-radius: 12px;
+      padding-left: 6px;
+      margin: 0 -6px;
+    }
+    .nav-option:active { background: rgba(155,48,255,0.05); }
+
+    .nav-icon {
+      width: 44px; height: 44px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+    }
+
+    .nav-label { font-size: 15px; color: var(--text); }
+
+    .nav-cancel {
+      margin-top: 12px;
+      width: 100%;
+      padding: 14px;
+      background: rgba(155, 48, 255, 0.06);
+      border: 1.5px solid rgba(155,48,255,0.15);
+      border-radius: 16px;
+      color: var(--muted);
+      font-family: 'Noto Sans SC', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* ── 打卡成功 Toast ── */
+    #toast {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.7);
+      z-index: 600;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 28px;
+      padding: 30px 36px;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      min-width: 220px;
+      box-shadow:
+        0 20px 60px rgba(155, 48, 255, 0.3),
+        0 1px 0 rgba(255,255,255,1) inset;
+      border: 1.5px solid transparent;
+      background-clip: padding-box;
+    }
+    #toast::before {
+      content: '';
+      position: absolute; inset: -1.5px;
+      border-radius: 29px;
+      background: linear-gradient(135deg,
+        var(--r1),var(--r2),var(--r3),
+        var(--r4),var(--r5),var(--r6),var(--r1));
+      background-size: 300% 300%;
+      animation: holo-shift 2s linear infinite;
+      z-index: -1;
+    }
+    #toast.show {
+      animation: bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    #toast.hide {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.8);
+      transition: all 0.3s ease;
+    }
+
+    .toast-emoji { font-size: 40px; display: block; margin-bottom: 10px; animation: float 2s ease-in-out infinite; }
+
+    .toast-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      background: linear-gradient(90deg, var(--pink), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 4px;
+    }
+
+    .toast-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .toast-stars {
+      margin-top: 10px;
+      font-size: 14px;
+      letter-spacing: 4px;
+    }
+
+    /* 彩虹标记 */
+    .amap-marker-content { background: none !important; border: none !important; }
+
+    .flag-marker {
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: drop-shadow(0 3px 8px rgba(0,0,0,0.18));
+      animation: float 3s ease-in-out infinite;
+    }
+    .flag-marker:hover { transform: scale(1.2) translateY(-2px); }
+
+    #bottom-sheet::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- 顶栏 -->
+<div id="header">
+  <div class="header-logo">
+    <div class="site-title">QueerGO</div>
+    <div class="site-sub">
+      <span class="star">✦</span>北京酷儿春游地图<span class="star">✦</span>
+    </div>
+  </div>
+  <div id="progress-wrap">
+    <div id="progress-label">已点亮 <strong><span id="checked-count">0</span></strong> / <span id="total-count">0</span></div>
+    <div id="progress-bar"><div id="progress-fill"></div></div>
+  </div>
+</div>
+
+<!-- 地图 -->
+<div id="map"></div>
+
+<!-- 遮罩 -->
+<div id="sheet-overlay" onclick="closeSheet()"></div>
+
+<!-- 底部详情面板 -->
+<div id="bottom-sheet">
+  <div class="sheet-handle"></div>
+  <div class="img-placeholder" id="sheet-img-wrap">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <circle cx="8.5" cy="8.5" r="1.5"/>
+      <path d="M21 15l-5-5L5 21"/>
+    </svg>
+    <span>历史照片 · 待填入</span>
+  </div>
+  <div id="sheet-content">
+    <div id="sheet-era"></div>
+    <div id="sheet-name"></div>
+    <div id="sheet-address">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+      </svg>
+      <span id="sheet-addr-text"></span>
+    </div>
+    <div class="divider"></div>
+    <div id="sheet-desc"></div>
+    <div class="btn-row">
+      <button class="btn btn-nav" onclick="showNavModal()">导航到这里</button>
+      <button class="btn btn-checkin disabled" id="checkin-btn" onclick="doCheckin()">打卡</button>
+    </div>
+    <div id="distance-hint"></div>
+  </div>
+</div>
+
+<!-- 导航选择弹窗 -->
+<div id="nav-modal" onclick="hideNavModal(event)">
+  <div id="nav-panel">
+    <div class="nav-title">✦ 选择导航应用 ✦</div>
+    <div class="nav-option" onclick="navigate('amap')">
+      <div class="nav-icon">🗺️</div>
+      <span class="nav-label">高德地图</span>
+    </div>
+    <div class="nav-option" onclick="navigate('baidu')">
+      <div class="nav-icon">🔵</div>
+      <span class="nav-label">百度地图</span>
+    </div>
+    <div class="nav-option" onclick="navigate('apple')">
+      <div class="nav-icon">🍎</div>
+      <span class="nav-label">苹果地图</span>
+    </div>
+    <div class="nav-option" onclick="navigate('google')">
+      <div class="nav-icon">🌐</div>
+      <span class="nav-label">Google Maps</span>
+    </div>
+    <button class="nav-cancel" onclick="hideNavModal()">取消</button>
+  </div>
+</div>
+
+<!-- 打卡成功 Toast -->
+<div id="toast">
+  <span class="toast-emoji">🏳️‍🌈</span>
+  <div class="toast-title">CHECK IN!</div>
+  <div class="toast-sub" id="toast-name"></div>
+  <div class="toast-stars">✦ ✧ ✦</div>
+</div>
+
+<!-- 高德安全密钥 -->
+<script type="text/javascript">
+  window._AMapSecurityConfig = {
+    securityJsCode: "cf70a7217550e83a8ddbe92a8aea3306",
+  };
+</script>
+
+<!-- 高德地图 JS API -->
+<script src="https://webapi.amap.com/maps?v=2.0&key=440d71cc8e53bb42ca1895be4edfc4f8&plugin=AMap.Geolocation"></script>
+
+<script>
+// ────────────────────────────────────────────
+// 地点数据（GCJ-02 坐标）
+// ────────────────────────────────────────────
+const LOCATIONS = [
+  {
+    id: 1,
+    name: "莱特曼舞厅",
+    era: "1995",
+    address: "北京市朝阳区西坝河南里2号",
+    lat: 39.961371, lng: 116.439325,
+    desc: "莱特曼（Night man）舞厅原本是一家有许多男同性恋者出入的场所，拥有一个巨大的舞场，左边大多是同志，右边是普通人。1995年9月联合国第四次世界妇女大会期间，吴春生租了两辆大巴车，将参与世妇会非政府论坛的外国代表从怀柔接到这里。当晚，上百名国际拉拉与十余名北京本地的拉拉相聚一堂，共同促成了拉拉社群一次空前的大型集体亮相。",
+    image: null
+  },
+  {
+    id: 2,
+    name: "柳芳新天地大厦",
+    era: "2010–2020",
+    address: "北京市朝阳区西坝河南路甲1号院",
+    lat: 39.959188, lng: 116.433524,
+    desc: "这里曾聚集了北京同志中心、同语、女权之声、爱白、Lesdo乐度等大量性别与同志公益机构。各机构经常互相串门、蹭饭、共享活动空间。北京同志中心一直保持着不锁门的开放态度，直到疫情期间陆续搬离，成为最后离开的机构。",
+    image: null
+  },
+  {
+    id: 3,
+    name: "画楼西畔酒吧",
+    era: "2008",
+    address: "北京市朝阳区女人街星吧路12号",
+    lat: 39.956549, lng: 116.467832,
+    desc: "2008年1月，《LES+》杂志在这里举办两周年生日派对，原本只能容纳100人的场地挤进了400多人，编辑们集体跳了艳舞，一套完整的《LES+》杂志被拍卖到几千元。同年4月，第一届中国酷儿独立影像展在此开幕，两天吸引超过600人参与，观众甚至坐在地上观看。",
+    image: null
+  },
+  {
+    id: 4,
+    name: "一半一半酒吧",
+    era: "1996",
+    address: "北京市朝阳区三里屯南里15号楼麒麟大厦东",
+    lat: 39.934875, lng: 116.454338,
+    desc: "1996年6月，Susie等人以\"办生日聚会\"的名义，在这个偏僻安静的小酒吧里组织了国内第一次纪念石墙运动的活动。约有60人参加，大家唱了生日歌并分发蛋糕，猜对石墙事件的人可以获得小礼物。一位男同志听完故事后激动地喊道：\"我知道了，今天是我们大家伙儿的生日！\"自这一天起，这里成为北京第一个专门的同志聚会场所。",
+    image: null
+  },
+  {
+    id: 5,
+    name: "法国文化中心",
+    era: "2000s–2010s",
+    address: "北京市朝阳区工人体育场西路18号",
+    lat: 39.927263, lng: 116.444313,
+    desc: "法国文化中心凭借其官方外交背景，长期为酷儿文化在北京提供了一个相对安全且开放的展示空间。它是爱酷电影周等性少数群体影展的核心放映阵地，通过举办性别认同相关学术讲座、引入法国本土酷儿艺术展览，成为跨文化酷儿交流的重要平台。",
+    image: null
+  },
+  {
+    id: 6,
+    name: "丰联广场（北京拉拉沙龙）",
+    era: "2004–2010s",
+    address: "北京市朝阳区朝外大街18号",
+    lat: 39.923981, lng: 116.438854,
+    desc: "这里的金芭蕉餐厅、乐爵士餐吧、百文庄园餐吧先后见证了北京拉拉沙龙的成长。2004年底，安可、闲等人决定创办一个光天化日之下的下午场文化沙龙，以区别于被污名化的夜间酒吧。沙龙话题从文学影视分享，逐渐转向拉拉职场、伴侣关系等更接地气的生活议题，运营十余年。",
+    image: null
+  },
+  {
+    id: 7,
+    name: "枫吧",
+    era: "1999–2009+",
+    address: "北京市朝阳区秀水南街",
+    lat: 39.910401, lng: 116.443932,
+    desc: "1999年，公开出柜的女艺人乔乔在此开办了中国第一家禁止男士入内的纯拉拉酒吧。开业当天盛况空前，来了300多人。枫吧为北京拉拉社群注入了浓厚的娱乐色彩，举办过\"京城四大帅T\"\"四大美P\"选秀等极具人气的活动。十多年间，它历经两次关门与重开，曾搬迁至工人体育场附近和簋街等地。",
+    image: null
+  },
+  {
+    id: 8,
+    name: "潜水艇酒吧",
+    era: "1998",
+    address: "北京市海淀区北京大学南门附近",
+    lat: 39.986537, lng: 116.31372,
+    desc: "这是一家在90年代很有名气的半地下酒吧，室内被布置成船的形状。1998年10月，具有启航意义的首届\"女同志大会\"在此举行。李京通过手写信件，联络了来自天津、贵州、哈尔滨、大连等地的40多名女同志齐聚北京。这次大会直接促成了\"北京姐妹小组\"的成立，并推动了第一条女同热线和第一份拉拉杂志《天空》的诞生。",
+    image: null
+  },
+  {
+    id: 9,
+    name: "西厢房酒吧",
+    era: "2005",
+    address: "北京市西城区德胜门城楼内（德胜门内大街）",
+    lat: 39.940677, lng: 116.379241,
+    desc: "北京第一家全天候非专场拉拉酒吧，由一对拉拉伴侣经营，设在古色古香的城楼里，墙上挂着各朝代仕女图。2005年1月，20多名志愿者在此正式成立拉拉小组\"同语\"，确立\"平等、多元、和谐\"的宗旨。同年圣诞平安夜，《LES+》杂志第一期也在这里首次向公众派发。城外匆匆的路人，不知道这里曾有一家拉拉酒吧。",
+    image: null
+  },
+  {
+    id: 10,
+    name: "西单华威大厦",
+    era: "1990s–2010",
+    address: "北京市西城区西单北大街130号",
+    lat: 39.911478, lng: 116.374566,
+    desc: "在90年代和21世纪初，这里（尤其是8层的美食广场）是初高中生等年轻拉拉最著名的非正式聚会地点。拉拉们会挤满商场的直梯直达8层，在公共餐桌旁吃东西，互相探测猜测谁是拉拉、谁是Gay。很多人会在这里消磨时间，等到晚上八九点再一起打车去拉拉酒吧狂欢通宵。",
+    image: null
+  },
+  {
+    id: 11,
+    name: "前门大街",
+    era: "2009",
+    address: "北京市东城区前门大街（中轴线）",
+    lat: 39.899368, lng: 116.39791,
+    desc: "2009年2月14日情人节，为支持李银河递交的同性婚姻立法建议，两对同志情侣（一对拉拉、一对Gay）穿着盛装婚纱，在翻建刚开放的新前门大街拍摄结婚照，并向路人赠送玫瑰。周围路人起初以为是异性恋情侣，发现真相后纷纷驻足围观。这次勇敢\"走到阳光下\"的行动被路透社、华尔街日报、新京报等多家媒体正面报道。",
+    image: null
+  },
+  {
+    id: 12,
+    name: "建外SOHO",
+    era: "2007",
+    address: "北京市朝阳区东三环中路39号院",
+    lat: 39.905523, lng: 116.459465,
+    desc: "2007年2月14日情人节，同志社群的志愿者在此举办\"爱无关性别\"送花倡导活动。由于前一天发现玫瑰花太贵，大家临时改买康乃馨，用印有同性婚姻传单包裹200朵康乃馨送出。趁中午午休时间，志愿者将花送给白领、环卫工人及保安，还有路人收到花后开心回应：\"其实我也是同志！\"活动被《新京报》报道，石头和明明据此拍摄了纪录短片《我们要结婚》。",
+    image: null
+  },
+  {
+    id: 14,
+    name: "北京西山大觉寺",
+    era: "1998",
+    address: "北京市海淀区阳台山麓",
+    lat: 40.052849, lng: 116.106103,
+    desc: "1998年8月，香港的胡建雄、周华山等人为推动两岸三地在同志问题上的交流，在这里召开了一次\"男女同志大会\"，有40多人参加。香港和台湾的代表分享了同志消费与权益问题，大陆代表介绍了同志热线的情况。正是受到这次大觉寺会议的启发，参会的拉拉才决定在同年10月专门筹办属于女同志自己的大会。",
+    image: null
+  },
+  {
+    id: 15,
+    name: "推拉 Push & Pull",
+    era: "当下",
+    address: "北京市朝阳区郎家园10号东郎电影创意产业园西门F102",
+    lat: 39.90626, lng: 116.472613,
+    desc: "北京仅存的酷儿友好酒吧之一，女性主义与酷儿文化的实验场。经常举办独立放映、工作坊及派对，成为新一代酷儿们的线下根据地。在历史的河流中，有的地方已经消失，而这里仍在发光。",
+    image: null
+  },
+  {
+    id: 16,
+    name: "东单公园",
+    era: "1980s–",
+    address: "北京市东城区大华路4号",
+    lat: 39.904917, lng: 116.41709,
+    desc: "东单公园在中国酷儿文化中具有极其重要的象征意义，是新中国成立以来历史最悠久、知名度最高的男同性恋线下聚会场所。在互联网尚未普及且同性恋身份高度边缘化的年代，这里成为半公开的\"安全港湾\"，来自各行各业的性少数者在此寻找同伴。以其为原型的电影《东宫西宫》深刻描绘了当时酷儿群体的生存困境。",
+    image: null
+  },
+  {
+    id: 17,
+    name: "目的地酒吧 Destination",
+    era: "2004–",
+    address: "北京市朝阳区工人体育场西路7号",
+    lat: 39.928562, lng: 116.443539,
+    desc: "目的地（Destination）是北京目前规模最大、运营时间最长的性少数群体综合性娱乐空间。自2004年创立以来，它已从单一的男同志酒吧转型为包含夜店、画廊、咖啡厅及公益中心的多功能建筑，长期作为艾滋病防治宣传和性健康检测的合作点，并为多个本土酷儿艺术项目提供展示场地。",
+    image: null
+  },
+  {
+    id: 18,
+    name: "星巴克 (中粮广场店)",
+    era: "测试地点",
+    address: "北京市东城区建国门内大街8号中粮广场C座一层125",
+    lat: 39.906941, lng: 116.429496,
+    desc: "测试地点",
+    image: null
+  },
+  {
+    id: 19,
+    name: "永宁禅寺",
+    era: "测试地点",
+    address: "板桥胡同6号院",
+    lat: 39.939775, lng: 116.41843,
+    desc: "测试地点",
+    image: null
+  }
+];
+
+// ────────────────────────────────────────────
+// 状态管理
+// ────────────────────────────────────────────
+const STORAGE_KEY = 'queergo_checkins_v1';
+let checkedIn = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+let currentLocation = null;
+let activeId = null;
+let markers = {};
+let map = null;
+
+// ────────────────────────────────────────────
+// SVG 彩虹旗标记
+// 未打卡：中灰色，在浅色地图上清晰可见
+// 已打卡：彩色 + 闪光
+// ────────────────────────────────────────────
+function flagSVG(colored) {
+  if (colored) {
+    const stripes = ['#FF3366','#FF8800','#FFE000','#00CC44','#0088FF','#9933FF'];
+    const s = stripes.map((c, i) =>
+      `<rect x="6" y="${4 + i*6}" width="22" height="6" fill="${c}"/>`
+    ).join('');
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="44" viewBox="0 0 32 44">
+      <defs>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <rect x="2.5" y="0" width="3" height="44" fill="url(#pole)" rx="1.5"/>
+      <defs>
+        <linearGradient id="pole" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#d4a0ff"/>
+          <stop offset="100%" stop-color="#9933FF"/>
+        </linearGradient>
+      </defs>
+      <g filter="url(#glow)">${s}</g>
+      <circle cx="4" cy="44" r="2.5" fill="#9933FF" opacity="0.6"/>
+    </svg>`;
+  } else {
+    // 灰色旗，在浅色地图上足够显眼
+    const stripes = ['#aaa','#999','#888','#777','#888','#999'];
+    const s = stripes.map((c, i) =>
+      `<rect x="6" y="${4 + i*6}" width="22" height="6" fill="${c}"/>`
+    ).join('');
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="44" viewBox="0 0 32 44">
+      <rect x="2.5" y="0" width="3" height="44" fill="#bbb" rx="1.5"/>
+      ${s}
+      <circle cx="4" cy="44" r="2.5" fill="#ccc"/>
+    </svg>`;
+  }
+}
+
+// ────────────────────────────────────────────
+// 距离计算（Haversine，单位：米）
+// ────────────────────────────────────────────
+function distance(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 +
+    Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function fmtDist(m) {
+  return m < 1000 ? `${Math.round(m)} 米` : `${(m/1000).toFixed(1)} 公里`;
+}
+
+// ────────────────────────────────────────────
+// 进度
+// ────────────────────────────────────────────
+function updateProgress() {
+  const count = Object.keys(checkedIn).length;
+  const total = LOCATIONS.length;
+  document.getElementById('checked-count').textContent = count;
+  document.getElementById('total-count').textContent = total;
+  document.getElementById('progress-fill').style.width = `${(count/total)*100}%`;
+}
+
+// ────────────────────────────────────────────
+// 打卡按钮状态
+// ────────────────────────────────────────────
+function refreshCheckinBtn() {
+  const btn = document.getElementById('checkin-btn');
+  const hint = document.getElementById('distance-hint');
+  if (!activeId) return;
+
+  if (checkedIn[activeId]) {
+    btn.textContent = '✓ 已打卡';
+    btn.className = 'btn btn-checkin done';
+    hint.textContent = '你已经来过这里了 🏳️‍🌈';
+    return;
+  }
+
+  if (!currentLocation) {
+    btn.textContent = '打卡';
+    btn.className = 'btn btn-checkin disabled';
+    hint.textContent = '正在获取你的位置…';
+    return;
+  }
+
+  const loc = LOCATIONS.find(l => l.id === activeId);
+  const d = distance(currentLocation.lat, currentLocation.lng, loc.lat, loc.lng);
+
+  if (d <= 100) {
+    btn.textContent = '✦ 打卡';
+    btn.className = 'btn btn-checkin';
+    hint.textContent = `📍 距离 ${fmtDist(d)}，可以打卡啦！`;
+  } else {
+    btn.textContent = '打卡';
+    btn.className = 'btn btn-checkin disabled';
+    hint.textContent = `距这里还有 ${fmtDist(d)}，走过去看看`;
+  }
+}
+
+// ────────────────────────────────────────────
+// 打开详情面板
+// ────────────────────────────────────────────
+function openSheet(id) {
+  const loc = LOCATIONS.find(l => l.id === id);
+  if (!loc) return;
+  activeId = id;
+
+  document.getElementById('sheet-era').textContent = loc.era;
+  document.getElementById('sheet-name').textContent = loc.name;
+  document.getElementById('sheet-addr-text').textContent = loc.address;
+  document.getElementById('sheet-desc').textContent = loc.desc;
+
+  const wrap = document.getElementById('sheet-img-wrap');
+  if (loc.image) {
+    wrap.innerHTML = `<img src="${loc.image}" style="width:100%;height:190px;object-fit:cover;display:block;margin-top:10px;" alt="${loc.name}">`;
+  } else {
+    wrap.innerHTML = `<div class="img-placeholder">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <path d="M21 15l-5-5L5 21"/>
+      </svg>
+      <span>历史照片 · 待填入</span>
+    </div>`;
+  }
+
+  refreshCheckinBtn();
+  document.getElementById('sheet-overlay').classList.add('active');
+  document.getElementById('bottom-sheet').classList.add('open');
+}
+
+function closeSheet() {
+  document.getElementById('sheet-overlay').classList.remove('active');
+  document.getElementById('bottom-sheet').classList.remove('open');
+  activeId = null;
+}
+
+// ────────────────────────────────────────────
+// 打卡
+// ────────────────────────────────────────────
+function doCheckin() {
+  if (!activeId) return;
+  const btn = document.getElementById('checkin-btn');
+  if (btn.classList.contains('disabled') || btn.classList.contains('done')) return;
+
+  checkedIn[activeId] = Date.now();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(checkedIn));
+
+  const marker = markers[activeId];
+  if (marker) {
+    marker.setContent(`<div class="flag-marker">${flagSVG(true)}</div>`);
+  }
+
+  updateProgress();
+  refreshCheckinBtn();
+
+  const loc = LOCATIONS.find(l => l.id === activeId);
+  showToast(loc.name);
+}
+
+function showToast(name) {
+  document.getElementById('toast-name').textContent = name;
+  const t = document.getElementById('toast');
+  t.classList.remove('hide');
+  t.classList.add('show');
+  setTimeout(() => {
+    t.classList.remove('show');
+    t.classList.add('hide');
+  }, 2800);
+}
+
+// ────────────────────────────────────────────
+// 导航
+// ────────────────────────────────────────────
+function showNavModal() {
+  document.getElementById('nav-modal').classList.add('show');
+}
+
+function hideNavModal(e) {
+  if (!e || e.target === document.getElementById('nav-modal')) {
+    document.getElementById('nav-modal').classList.remove('show');
+  }
+}
+
+function navigate(app) {
+  const loc = LOCATIONS.find(l => l.id === activeId);
+  if (!loc) return;
+  const { lat, lng, name } = loc;
+  const encName = encodeURIComponent(name);
+
+  let url = '';
+  switch(app) {
+    case 'amap':
+      url = `iosamap://path?sourceApplication=QueerGO&dlat=${lat}&dlon=${lng}&dname=${encName}&dev=0`;
+      setTimeout(() => { window.open(`https://uri.amap.com/navigation?to=${lng},${lat},${encName}&mode=walking&src=QueerGO`, '_blank'); }, 500);
+      break;
+    case 'baidu':
+      url = `baidumap://map/direction?destination=latlng:${lat},${lng}|name:${encName}&mode=walking&src=QueerGO`;
+      setTimeout(() => { window.open(`https://api.map.baidu.com/direction?destination=latlng:${lat},${lng}|name:${encName}&mode=walking&output=html&src=QueerGO`, '_blank'); }, 500);
+      break;
+    case 'apple':
+      url = `maps://?daddr=${lat},${lng}&dirflg=w`;
+      break;
+    case 'google':
+      url = `comgooglemaps://?daddr=${lat},${lng}&directionsmode=walking`;
+      setTimeout(() => { window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`, '_blank'); }, 500);
+      break;
+  }
+
+  if (url) {
+    const a = document.createElement('a');
+    a.href = url; a.click();
+  }
+  hideNavModal();
+}
+
+// ────────────────────────────────────────────
+// 初始化地图
+// ────────────────────────────────────────────
+function initMap() {
+  map = new AMap.Map('map', {
+    zoom: 13,
+    center: [116.4074, 39.9042],
+    mapStyle: 'amap://styles/whitesmoke',   // 浅色底图，灰旗清晰可见
+    showLabel: true,
+    resizeEnable: true,
+  });
+
+  LOCATIONS.forEach(loc => {
+    const colored = !!checkedIn[loc.id];
+    const marker = new AMap.Marker({
+      position: new AMap.LngLat(loc.lng, loc.lat),
+      content: `<div class="flag-marker">${flagSVG(colored)}</div>`,
+      offset: new AMap.Pixel(-16, -44),
+      title: loc.name,
+    });
+    marker.on('click', () => openSheet(loc.id));
+    marker.setMap(map);
+    markers[loc.id] = marker;
+  });
+
+  const geolocation = new AMap.Geolocation({
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 0,
+    buttonOffset: new AMap.Pixel(12, 90),
+    showButton: true,
+    buttonPosition: 'RB',
+  });
+  map.addControl(geolocation);
+
+  geolocation.getCurrentPosition((status, result) => {
+    if (status === 'complete') {
+      currentLocation = { lat: result.position.lat, lng: result.position.lng };
+      refreshCheckinBtn();
+    }
+  });
+
+  // 移除持续位置监听，避免反复弹出位置请求
+  // geolocation.watchPosition((status, result) => {
+  //   if (status === 'complete') {
+  //     currentLocation = { lat: result.position.lat, lng: result.position.lng };
+  //     if (activeId) refreshCheckinBtn();
+  //   }
+  // });
+
+  updateProgress();
+}
+
+// ────────────────────────────────────────────
+// 启动
+// ────────────────────────────────────────────
+window.onload = () => {
+  if (typeof AMap !== 'undefined') {
+    initMap();
+  } else {
+    document.getElementById('map').innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+        height:100%;gap:16px;color:#7a6a9a;padding:40px;text-align:center;
+        background:linear-gradient(135deg,#f8f0ff,#f0f8ff);">
+        <div style="font-size:48px">🏳️‍🌈</div>
+        <div style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;
+          background:linear-gradient(90deg,#FF2D9B,#9B30FF);
+          -webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+          地图加载失败
+        </div>
+        <div style="font-size:13px;line-height:1.8;color:#7a6a9a;">
+          请检查高德地图 API Key 是否已正确填入<br>或确认网络连接正常
+        </div>
+      </div>`;
+  }
+};
+</script>
+</html>
