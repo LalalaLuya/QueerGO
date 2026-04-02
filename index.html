@@ -304,6 +304,12 @@
       background: #000;
       border-radius: var(--r-md);
       overflow: hidden;
+      touch-action: pan-y pinch-zoom; /* 允许垂直滑动和缩放，禁止水平滑动 */
+      user-select: none; /* 防止文本选择 */
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      -webkit-tap-highlight-color: transparent; /* 去除iOS点击高亮 */
     }
     .carousel-container {
       position: relative;
@@ -312,6 +318,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      touch-action: manipulation; /* 优化触摸响应 */
     }
     .carousel-image {
       max-width: 100%;
@@ -320,6 +327,11 @@
       height: auto;
       object-fit: contain;
       display: block;
+      pointer-events: none; /* 防止图片干扰触摸事件 */
+      transition: opacity 0.2s ease;
+    }
+    .carousel-image.swiping {
+      opacity: 0.7; /* 滑动时的视觉反馈 */
     }
     .carousel-nav {
       position: absolute;
@@ -336,10 +348,13 @@
       justify-content: center;
       cursor: pointer;
       font-size: 16px;
-      transition: background 0.2s ease;
+      transition: background 0.2s ease, transform 0.2s ease;
       z-index: 10;
+      touch-action: manipulation; /* 确保按钮可点击 */
+      -webkit-tap-highlight-color: transparent;
     }
     .carousel-nav:hover { background: rgba(0,0,0,0.7); }
+    .carousel-nav:active { transform: translateY(-50%) scale(0.9); }
     .carousel-prev { left: 8px; }
     .carousel-next { right: 8px; }
     .carousel-indicators {
@@ -350,6 +365,7 @@
       display: flex;
       gap: 6px;
       z-index: 10;
+      pointer-events: none; /* 防止指示器干扰滑动 */
     }
     .carousel-dot {
       width: 8px;
@@ -357,8 +373,11 @@
       border-radius: 50%;
       background: rgba(255,255,255,0.4);
       cursor: pointer;
-      transition: background 0.2s ease;
+      transition: background 0.2s ease, transform 0.2s ease;
+      pointer-events: auto; /* 允许点击指示器 */
+      -webkit-tap-highlight-color: transparent;
     }
+    .carousel-dot:hover { transform: scale(1.2); }
     .carousel-dot.active { background: white; }
     .carousel-counter {
       position: absolute;
@@ -370,6 +389,7 @@
       border-radius: 12px;
       font-size: 11px;
       z-index: 10;
+      pointer-events: none; /* 防止计数器干扰滑动 */
     }
 
     /* ── Sheet content area ── */
@@ -1125,6 +1145,8 @@ function refreshCheckinBtn() {
 // 图片轮播控制
 // ────────────────────────────────────────────
 let currentImageIndex = {};
+let touchStartX = 0;
+let touchEndX = 0;
 
 function showImage(locationId, index) {
   const loc = LOCATIONS.find(l => l.id === locationId);
@@ -1168,6 +1190,75 @@ function prevImage(locationId) {
   const currentIndex = currentImageIndex[locationId] || 0;
   const prevIndex = (currentIndex - 1 + loc.images.length) % loc.images.length;
   showImage(locationId, prevIndex);
+}
+
+// ────────────────────────────────────────────
+// 触摸滑动支持
+// ────────────────────────────────────────────
+function initTouchSwipe(carouselElement, locationId) {
+  if (!carouselElement) return;
+  
+  let isSwiping = false;
+  
+  carouselElement.addEventListener('touchstart', handleTouchStart, { passive: true });
+  carouselElement.addEventListener('touchmove', handleTouchMove, { passive: true });
+  carouselElement.addEventListener('touchend', handleTouchEnd, { passive: true });
+  
+  function handleTouchStart(e) {
+    touchStartX = e.touches[0].clientX;
+    isSwiping = false;
+  }
+  
+  function handleTouchMove(e) {
+    if (!touchStartX) return;
+    
+    const currentX = e.touches[0].clientX;
+    const diff = Math.abs(currentX - touchStartX);
+    
+    // 当水平移动距离超过10px时，标记为正在滑动
+    if (diff > 10) {
+      isSwiping = true;
+      const img = carouselElement.querySelector('.carousel-image');
+      if (img) {
+        img.classList.add('swiping');
+      }
+    }
+  }
+  
+  function handleTouchEnd(e) {
+    if (!touchStartX) return;
+    
+    const img = carouselElement.querySelector('.carousel-image');
+    if (img) {
+      img.classList.remove('swiping');
+    }
+    
+    if (!isSwiping) {
+      // 如果没有滑动，重置状态
+      touchStartX = 0;
+      touchEndX = 0;
+      return;
+    }
+    
+    touchEndX = e.changedTouches[0].clientX;
+    const swipeDistance = touchEndX - touchStartX;
+    const minSwipeDistance = 50; // 最小滑动距离
+    
+    if (Math.abs(swipeDistance) > minSwipeDistance) {
+      if (swipeDistance > 0) {
+        // 向右滑动 - 显示上一张
+        prevImage(locationId);
+      } else {
+        // 向左滑动 - 显示下一张
+        nextImage(locationId);
+      }
+    }
+    
+    // 重置触摸位置
+    touchStartX = 0;
+    touchEndX = 0;
+    isSwiping = false;
+  }
 }
 
 // ────────────────────────────────────────────
@@ -1234,6 +1325,14 @@ function openSheet(id) {
           </div>
         </div>
       `;
+      
+      // 初始化触摸滑动
+      setTimeout(() => {
+        const carouselElement = document.getElementById(carouselId);
+        if (carouselElement) {
+          initTouchSwipe(carouselElement, loc.id);
+        }
+      }, 100);
     }
   }
   // 无图片或视频
