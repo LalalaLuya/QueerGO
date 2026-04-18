@@ -1457,7 +1457,6 @@ const LOCATIONS = [
 // 状态管理
 // ────────────────────────────────────────────
 const STORAGE_KEY = 'queergo_checkins_v1';
-const RAINBOW_STORAGE_KEY = 'queergo_rainbow_images_v1';
 let checkedIn = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
 let currentLocation = null;
 let activeId = null;
@@ -1927,9 +1926,7 @@ function initMap() {
 // ────────────────────────────────────────────
 // 启动
 // ────────────────────────────────────────────
-window.onload = function() {
-  loadRainbowImages(); // Load saved rainbow images first
-  
+window.onload = () => {
   if (typeof AMap !== 'undefined') {
     initMap();
   } else {
@@ -1953,47 +1950,9 @@ window.onload = function() {
 // ═══════════════════════════════════════════
 //  Rainbow Flag Photo Collage
 // ═══════════════════════════════════════════
-// Load rainbow images from localStorage
-let rainbowImages = [null, null, null, null, null, null];
-let rainbowOriginals = [null, null, null, null, null, null];
+const rainbowImages = [null, null, null, null, null, null];
+const rainbowOriginals = [null, null, null, null, null, null];
 const rainbowColors = ['#FF3CAC', '#FF8C00', '#FFE000', '#00E676', '#00B4FF', '#AA00FF'];
-
-// Initialize rainbow images from localStorage
-function loadRainbowImages() {
-  const savedData = localStorage.getItem(RAINBOW_STORAGE_KEY);
-  if (savedData) {
-    try {
-      const parsed = JSON.parse(savedData);
-      rainbowImages = parsed.images || [null, null, null, null, null, null];
-      rainbowOriginals = parsed.originals || [null, null, null, null, null, null];
-      
-      // Update UI to show loaded images
-      rainbowImages.forEach(function(src, index) {
-        if (src) {
-          const slot = document.querySelectorAll('.rainbow-slot')[index];
-          if (slot) {
-            slot.classList.add('filled');
-            const img = slot.querySelector('.rainbow-slot-img');
-            if (img) {
-              img.src = src;
-            }
-          }
-        }
-      });
-    } catch (e) {
-      console.error('Failed to load rainbow images:', e);
-    }
-  }
-}
-
-// Save rainbow images to localStorage
-function saveRainbowImages() {
-  const dataToSave = {
-    images: rainbowImages,
-    originals: rainbowOriginals
-  };
-  localStorage.setItem(RAINBOW_STORAGE_KEY, JSON.stringify(dataToSave));
-}
 
 // ── FAB 拖动逻辑 ──
 (function() {
@@ -2001,9 +1960,6 @@ function saveRainbowImages() {
   let isDragging = false;
   let hasMoved = false;
   let startX, startY, fabStartX, fabStartY;
-  const SNAP_THRESHOLD = 50; // 距离边缘50px时自动吸附
-  const BUTTON_SIZE = 54; // 按钮大小
-  const HIDE_AMOUNT = BUTTON_SIZE / 3; // 隐藏1/3，即18px
 
   fab.addEventListener('touchstart', function(e) {
     const touch = e.touches[0];
@@ -2014,9 +1970,6 @@ function saveRainbowImages() {
     fabStartY = rect.top;
     hasMoved = false;
     isDragging = true;
-    // 清除所有吸附状态
-    fab.classList.remove('snap-left', 'snap-right', 'snap-top', 'snap-bottom');
-    fab.style.transform = '';
   }, { passive: true });
 
   fab.addEventListener('touchmove', function(e) {
@@ -2042,15 +1995,9 @@ function saveRainbowImages() {
   fab.addEventListener('touchend', function(e) {
     isDragging = false;
     fab.classList.remove('dragging');
-    
     if (!hasMoved) {
       openRainbowPanel();
-      return;
     }
-    
-    // 计算最终位置并吸附到边缘
-    snapToEdge();
-    hasMoved = false;
   });
 
   fab.addEventListener('click', function(e) {
@@ -2060,135 +2007,6 @@ function saveRainbowImages() {
     }
     hasMoved = false;
   });
-
-  // 鼠标支持（桌面端）
-  fab.addEventListener('mousedown', function(e) {
-    startX = e.clientX;
-    startY = e.clientY;
-    const rect = fab.getBoundingClientRect();
-    fabStartX = rect.left;
-    fabStartY = rect.top;
-    hasMoved = false;
-    isDragging = true;
-    // 清除所有吸附状态
-    fab.classList.remove('snap-left', 'snap-right', 'snap-top', 'snap-bottom');
-    fab.style.transform = '';
-    e.preventDefault();
-  });
-
-  document.addEventListener('mousemove', function(e) {
-    if (!isDragging) return;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-      hasMoved = true;
-      fab.classList.add('dragging');
-      let newX = fabStartX + dx;
-      let newY = fabStartY + dy;
-      // 限制在屏幕范围内
-      newX = Math.max(0, Math.min(window.innerWidth - fab.offsetWidth, newX));
-      newY = Math.max(0, Math.min(window.innerHeight - fab.offsetHeight, newY));
-      fab.style.left = newX + 'px';
-      fab.style.top = newY + 'px';
-      fab.style.right = 'auto';
-      fab.style.bottom = 'auto';
-    }
-  });
-
-  document.addEventListener('mouseup', function(e) {
-    if (!isDragging) return;
-    isDragging = false;
-    fab.classList.remove('dragging');
-    
-    if (!hasMoved) {
-      openRainbowPanel();
-      return;
-    }
-    
-    // 计算最终位置并吸附到边缘
-    snapToEdge();
-    hasMoved = false;
-  });
-
-  function snapToEdge() {
-    const rect = fab.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-    
-    // 计算到各边缘的距离
-    const distToLeft = centerX;
-    const distToRight = screenWidth - centerX;
-    const distToTop = centerY;
-    const distToBottom = screenHeight - centerY;
-    
-    // 找出最近的边缘
-    const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
-    
-    // 清除所有吸附类
-    fab.classList.remove('snap-left', 'snap-right', 'snap-top', 'snap-bottom');
-    
-    // 根据最近的边缘进行吸附
-    if (minDist === distToLeft || minDist === distToRight) {
-      // 左右边缘
-      if (distToLeft <= distToRight) {
-        // 吸附到左边
-        fab.style.left = '0px';
-        fab.style.right = 'auto';
-        fab.classList.add('snap-left');
-      } else {
-        // 吸附到右边
-        fab.style.right = '0px';
-        fab.style.left = 'auto';
-        fab.classList.add('snap-right');
-      }
-      
-      // 垂直位置保持不变
-      if (distToTop <= distToBottom) {
-        if (distToTop < SNAP_THRESHOLD) {
-          fab.style.top = '0px';
-          fab.style.bottom = 'auto';
-          fab.classList.add('snap-top');
-        }
-      } else {
-        if (distToBottom < SNAP_THRESHOLD) {
-          fab.style.bottom = '0px';
-          fab.style.top = 'auto';
-          fab.classList.add('snap-bottom');
-        }
-      }
-    } else {
-      // 上下边缘
-      if (distToTop <= distToBottom) {
-        // 吸附到顶部
-        fab.style.top = '0px';
-        fab.style.bottom = 'auto';
-        fab.classList.add('snap-top');
-      } else {
-        // 吸附到底部
-        fab.style.bottom = '0px';
-        fab.style.top = 'auto';
-        fab.classList.add('snap-bottom');
-      }
-      
-      // 水平位置保持不变
-      if (distToLeft <= distToRight) {
-        if (distToLeft < SNAP_THRESHOLD) {
-          fab.style.left = '0px';
-          fab.style.right = 'auto';
-          fab.classList.add('snap-left');
-        }
-      } else {
-        if (distToRight < SNAP_THRESHOLD) {
-          fab.style.right = '0px';
-          fab.style.left = 'auto';
-          fab.classList.add('snap-right');
-        }
-      }
-    }
-  }
 })();
 
 function updateSlotLocks() {
@@ -2358,14 +2176,10 @@ function confirmCrop() {
 
     var slot = document.querySelectorAll('.rainbow-slot')[index];
     slot.classList.add('filled');
-    const slotImg = slot.querySelector('.rainbow-slot-img');
-    slotImg.src = dataUrl;
+    slot.querySelector('.rainbow-slot-img').src = dataUrl;
 
-    // Save to localStorage
-    saveRainbowImages();
-    
-    updateSlotLocks();
     updateRainbowPreview();
+    updateSlotLocks();
     closeCropUI();
   };
   img.src = cropState.imgSrc;
