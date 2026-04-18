@@ -118,30 +118,20 @@
       position: fixed;
       top: 12px; left: 12px; right: 12px;
       z-index: 200;
-      /* Glass surface */
-      background: var(--surface);
-      backdrop-filter: blur(28px) saturate(200%);
-      -webkit-backdrop-filter: blur(28px) saturate(200%);
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
       border-radius: var(--r-xl);
       padding: 12px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      /* Depth */
-      box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.75) inset;
+      box-shadow: var(--shadow-lg);
     }
 
-    /* Iridescent border ring */
+    /* Border ring — disabled */
     #header::before {
-      content: '';
-      position: absolute;
-      inset: -1.5px;
-      border-radius: calc(var(--r-xl) + 1.5px);
-      background: linear-gradient(135deg,
-        var(--r1), var(--r2), var(--r3), var(--r4), var(--r5), var(--r6), var(--r1));
-      background-size: 300% 300%;
-      animation: holo-shift 5s ease infinite;
-      z-index: -1;
+      display: none;
     }
 
     .header-logo {
@@ -150,17 +140,20 @@
       gap: 3px;
     }
 
-    /* Logo wordmark */
+    /* Logo wordmark — animated rainbow */
     .site-title {
       font-family: var(--font-display);
       font-weight: 900;
       font-size: 20px;
       letter-spacing: 0.04em;
       line-height: 1;
-      background: linear-gradient(90deg, var(--pink) 0%, var(--violet) 55%, var(--cyan) 100%);
+      background: linear-gradient(90deg,
+        var(--r1), var(--r2), var(--r3), var(--r4), var(--r5), var(--r6), var(--r1));
+      background-size: 300% 100%;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      animation: holo-shift 5s ease infinite;
     }
 
     /* Subtitle — light tracking, quiet */
@@ -280,9 +273,7 @@
     .img-placeholder {
       width: 100%;
       min-height: 200px;
-      background: var(--grad-holo);
-      background-size: 400% 400%;
-      animation: holo-shift 9s ease infinite;
+      background: #000;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -737,12 +728,376 @@
       cursor: pointer;
       transition: transform 0.25s var(--ease-spring);
       filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.20));
-      animation: float 3.5s ease-in-out infinite;
     }
     .flag-marker:hover { transform: scale(1.22) translateY(-3px); }
 
     /* ── Scrollbar ── */
     #bottom-sheet::-webkit-scrollbar { display: none; }
+
+    /* ═══════════════════════════════════════════
+       Rainbow Flag Photo Collage
+    ═══════════════════════════════════════════ */
+    #rainbow-fab {
+      position: fixed;
+      bottom: 120px;
+      right: 20px;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid var(--border-mid);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      z-index: 250;
+      cursor: pointer;
+      animation: float 3.5s ease-in-out infinite;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #rainbow-fab:hover { box-shadow: var(--shadow-lg); }
+    #rainbow-fab.dragging { opacity: 0.8; animation: none; }
+    
+    /* Edge snap states with one-third hiding */
+    #rainbow-fab.snap-left {
+      left: 0 !important;
+      right: auto !important;
+      transform: translateX(-18px); /* Hide 1/3 of 54px button */
+    }
+    #rainbow-fab.snap-right {
+      right: 0 !important;
+      left: auto !important;
+      transform: translateX(18px); /* Hide 1/3 of 54px button */
+    }
+    #rainbow-fab.snap-top {
+      top: 0 !important;
+      bottom: auto !important;
+      transform: translateY(-18px); /* Hide 1/3 of 54px button */
+    }
+    #rainbow-fab.snap-bottom {
+      bottom: 0 !important;
+      top: auto !important;
+      transform: translateY(18px); /* Hide 1/3 of 54px button */
+    }
+    
+    /* Combined edge states */
+    #rainbow-fab.snap-left.snap-top {
+      transform: translate(-18px, -18px);
+    }
+    #rainbow-fab.snap-right.snap-top {
+      transform: translate(18px, -18px);
+    }
+    #rainbow-fab.snap-left.snap-bottom {
+      transform: translate(-18px, 18px);
+    }
+    #rainbow-fab.snap-right.snap-bottom {
+      transform: translate(18px, 18px);
+    }
+
+    #rainbow-panel-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 690;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    #rainbow-panel-overlay.active { opacity: 1; pointer-events: auto; }
+
+    #rainbow-panel {
+      position: fixed;
+      inset: 0;
+      z-index: 700;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+      overflow-y: auto;
+    }
+    #rainbow-panel.active { transform: translateY(0); }
+
+    .rainbow-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    .rainbow-panel-title {
+      font-family: 'Noto Sans SC', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .rainbow-panel-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--text-2);
+      transition: background 0.15s;
+    }
+    .rainbow-panel-close:hover { background: var(--surface3); }
+
+    .rainbow-panel-body {
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .rainbow-panel-intro {
+      font-family: 'Noto Sans SC', sans-serif;
+      font-size: 14px;
+      color: var(--text-2);
+      line-height: 1.6;
+      margin-bottom: 8px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .rainbow-slot {
+      position: relative;
+      border-radius: 6px;
+      overflow: hidden;
+      aspect-ratio: 6 / 1;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      border: 2px solid transparent;
+      box-shadow: var(--shadow-xs);
+    }
+    .rainbow-slot:hover { transform: scale(1.02); box-shadow: var(--shadow-sm); }
+    .rainbow-slot:active { transform: scale(0.98); }
+    .rainbow-slot.locked {
+      opacity: 0.35;
+      pointer-events: none;
+      filter: grayscale(100%);
+    }
+
+    .rainbow-slot-bg {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: 'Noto Sans SC', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.9);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .rainbow-slot-bg .slot-icon {
+      font-size: 22px;
+      opacity: 0.85;
+    }
+
+    .rainbow-slot-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+    .rainbow-slot.filled .rainbow-slot-img { display: block; }
+    .rainbow-slot.filled .rainbow-slot-bg { display: none; }
+
+    .rainbow-slot-actions {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      transform: translateY(-50%);
+      display: none;
+      gap: 6px;
+    }
+    .rainbow-slot.filled .rainbow-slot-actions { display: flex; }
+    .rainbow-slot-recrop, .rainbow-slot-reupload {
+      background: rgba(0,0,0,0.45);
+      color: #fff;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-family: 'Noto Sans SC', sans-serif;
+      cursor: pointer;
+      z-index: 5;
+    }
+    .rainbow-slot-recrop { pointer-events: auto; }
+    .rainbow-slot-reupload { pointer-events: none; }
+
+    .rainbow-slot input[type="file"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 3;
+    }
+    /* 已上传后，文件input不再覆盖整个区域，只通过"重新上传"按钮触发 */
+    .rainbow-slot.filled input[type="file"] {
+      pointer-events: none;
+    }
+    .rainbow-slot-reupload {
+      position: relative;
+      z-index: 6;
+      pointer-events: auto !important;
+      cursor: pointer;
+    }
+
+    .rainbow-save-wrap {
+      padding: 16px 20px 28px;
+      display: flex;
+      justify-content: center;
+    }
+    #rainbow-save-btn {
+      width: 100%;
+      max-width: 320px;
+      padding: 14px 0;
+      border: none;
+      border-radius: 14px;
+      background: #ccc;
+      color: #fff;
+      font-family: 'Noto Sans SC', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+    #rainbow-save-btn.ready {
+      background: var(--grad-rainbow);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      pointer-events: auto;
+    }
+    #rainbow-save-btn.ready:hover { transform: scale(1.03); }
+    #rainbow-save-btn.ready:active { transform: scale(0.97); }
+
+    .rainbow-preview-wrap {
+      padding: 0 20px 8px;
+      display: flex;
+      justify-content: center;
+    }
+    .rainbow-preview {
+      width: 100%;
+      max-width: 320px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid var(--border-mid);
+      box-shadow: var(--shadow-sm);
+    }
+    .rainbow-preview canvas {
+      width: 100%;
+      display: block;
+    }
+    /* ── 裁剪界面 ── */
+    #crop-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 900;
+      background: rgba(0,0,0,0.85);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #crop-overlay.active { display: flex; }
+    .crop-title {
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .crop-hint {
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+      margin-bottom: 16px;
+    }
+    .crop-container {
+      position: relative;
+      width: 100%;
+      max-width: 360px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .crop-container img {
+      width: 100%;
+      max-height: 60vh;
+      object-fit: contain;
+      display: block;
+    }
+    /* 上下遮罩 */
+    .crop-mask-top, .crop-mask-bottom {
+      position: absolute;
+      left: 0; right: 0;
+      background: rgba(0,0,0,0.55);
+      pointer-events: none;
+    }
+    .crop-mask-top { top: 0; }
+    .crop-mask-bottom { bottom: 0; }
+    /* 选区条纹 */
+    .crop-band {
+      position: absolute;
+      left: 0; right: 0;
+      border-top: 2px dashed rgba(255,255,255,0.8);
+      border-bottom: 2px dashed rgba(255,255,255,0.8);
+      cursor: grab;
+      touch-action: none;
+    }
+    .crop-band:active { cursor: grabbing; }
+    .crop-band-handle {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.9);
+      color: #333;
+      font-size: 11px;
+      padding: 2px 10px;
+      border-radius: 10px;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .crop-band-handle.top { top: -16px; }
+    .crop-band-handle.bottom { bottom: -16px; }
+    .crop-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .crop-btn {
+      padding: 12px 32px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .crop-btn-cancel {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+    .crop-btn-confirm {
+      background: #fff;
+      color: #333;
+    }
   </style>
 </head>
 <body>
@@ -750,7 +1105,7 @@
 <!-- 顶栏 -->
 <div id="header">
   <div class="header-logo">
-    <div class="site-title">QueerGO</div>
+    <div class="site-title">QUEERGO</div>
     <div class="site-sub">
       <span class="star">✦</span>北京酷儿春游地图<span class="star">✦</span>
     </div>
@@ -766,6 +1121,87 @@
 
 <!-- 遮罩 -->
 <div id="sheet-overlay" onclick="closeSheet()"></div>
+
+<!-- 彩虹旗浮动按钮 -->
+<div id="rainbow-fab" title="六色拼图">🏳️‍🌈</div>
+
+<!-- 彩虹旗面板遮罩 -->
+<div id="rainbow-panel-overlay" onclick="closeRainbowPanel()"></div>
+
+<!-- 彩虹旗拼图面板 -->
+<div id="rainbow-panel">
+  <div class="rainbow-panel-header">
+    <span class="rainbow-panel-title">🌈 六色拼图</span>
+    <div class="rainbow-panel-close" onclick="closeRainbowPanel()">✕</div>
+  </div>
+  <div class="rainbow-panel-body">
+    <div class="rainbow-panel-intro">
+      在城市中寻找彩虹六色的物体，拍下照片，拼成属于你的彩虹旗！
+    </div>
+    <div class="rainbow-slot" data-color="0" style="background: var(--r1);">
+      <div class="rainbow-slot-bg"><span class="slot-icon">＋</span> 红</div>
+      <img class="rainbow-slot-img" alt="红">
+      <span class="rainbow-slot-actions"><span class="rainbow-slot-recrop" onclick="recropSlot(this)">重新裁剪</span><span class="rainbow-slot-reupload" onclick="reuploadSlot(this)">重新上传</span></span>
+      <input type="file" accept="image/*" onchange="handleRainbowUpload(event, 0)">
+    </div>
+    <div class="rainbow-slot" data-color="1" style="background: var(--r2);">
+      <div class="rainbow-slot-bg"><span class="slot-icon">＋</span> 橙</div>
+      <img class="rainbow-slot-img" alt="橙">
+      <span class="rainbow-slot-actions"><span class="rainbow-slot-recrop" onclick="recropSlot(this)">重新裁剪</span><span class="rainbow-slot-reupload" onclick="reuploadSlot(this)">重新上传</span></span>
+      <input type="file" accept="image/*" onchange="handleRainbowUpload(event, 1)">
+    </div>
+    <div class="rainbow-slot" data-color="2" style="background: var(--r3);">
+      <div class="rainbow-slot-bg"><span class="slot-icon">＋</span> 黄</div>
+      <img class="rainbow-slot-img" alt="黄">
+      <span class="rainbow-slot-actions"><span class="rainbow-slot-recrop" onclick="recropSlot(this)">重新裁剪</span><span class="rainbow-slot-reupload" onclick="reuploadSlot(this)">重新上传</span></span>
+      <input type="file" accept="image/*" onchange="handleRainbowUpload(event, 2)">
+    </div>
+    <div class="rainbow-slot" data-color="3" style="background: var(--r4);">
+      <div class="rainbow-slot-bg"><span class="slot-icon">＋</span> 绿</div>
+      <img class="rainbow-slot-img" alt="绿">
+      <span class="rainbow-slot-actions"><span class="rainbow-slot-recrop" onclick="recropSlot(this)">重新裁剪</span><span class="rainbow-slot-reupload" onclick="reuploadSlot(this)">重新上传</span></span>
+      <input type="file" accept="image/*" onchange="handleRainbowUpload(event, 3)">
+    </div>
+    <div class="rainbow-slot" data-color="4" style="background: var(--r5);">
+      <div class="rainbow-slot-bg"><span class="slot-icon">＋</span> 蓝</div>
+      <img class="rainbow-slot-img" alt="蓝">
+      <span class="rainbow-slot-actions"><span class="rainbow-slot-recrop" onclick="recropSlot(this)">重新裁剪</span><span class="rainbow-slot-reupload" onclick="reuploadSlot(this)">重新上传</span></span>
+      <input type="file" accept="image/*" onchange="handleRainbowUpload(event, 4)">
+    </div>
+    <div class="rainbow-slot" data-color="5" style="background: var(--r6);">
+      <div class="rainbow-slot-bg"><span class="slot-icon">＋</span> 紫</div>
+      <img class="rainbow-slot-img" alt="紫">
+      <span class="rainbow-slot-actions"><span class="rainbow-slot-recrop" onclick="recropSlot(this)">重新裁剪</span><span class="rainbow-slot-reupload" onclick="reuploadSlot(this)">重新上传</span></span>
+      <input type="file" accept="image/*" onchange="handleRainbowUpload(event, 5)">
+    </div>
+  </div>
+  <div class="rainbow-preview-wrap">
+    <div class="rainbow-preview">
+      <canvas id="rainbow-canvas" width="600" height="360"></canvas>
+    </div>
+  </div>
+  <div class="rainbow-save-wrap">
+    <button id="rainbow-save-btn" onclick="saveRainbowFlag()">保存属于你的彩虹旗 🏳️‍🌈</button>
+  </div>
+</div>
+
+<!-- 裁剪界面 -->
+<div id="crop-overlay">
+  <div class="crop-title">选择条纹区域</div>
+  <div class="crop-hint">上下拖动选框，选择你想要的颜色区域</div>
+  <div class="crop-container" id="crop-container">
+    <img id="crop-img" src="">
+    <div class="crop-mask-top" id="crop-mask-top"></div>
+    <div class="crop-mask-bottom" id="crop-mask-bottom"></div>
+    <div class="crop-band" id="crop-band">
+      <span class="crop-band-handle top">↕ 拖动调整</span>
+    </div>
+  </div>
+  <div class="crop-buttons">
+    <button class="crop-btn crop-btn-cancel" onclick="cancelCrop()">取消</button>
+    <button class="crop-btn crop-btn-confirm" onclick="confirmCrop()">确认裁剪</button>
+  </div>
+</div>
 
 <!-- 底部详情面板 -->
 <div id="bottom-sheet">
@@ -989,15 +1425,6 @@ const LOCATIONS = [
     images: ["images/16_des01.jpeg"]
   },
   {
-    id: 18,
-    name: "星巴克 (中粮广场店)",
-    era: "测试地点",
-    address: "北京市东城区建国门内大街8号中粮广场C座一层125",
-    lat: 39.906941, lng: 116.429496,
-    desc: "测试地点",
-    image: null
-  },
-  {
     id: 19,
     name: "七色酒吧",
     era: "未知",
@@ -1030,6 +1457,7 @@ const LOCATIONS = [
 // 状态管理
 // ────────────────────────────────────────────
 const STORAGE_KEY = 'queergo_checkins_v1';
+const RAINBOW_STORAGE_KEY = 'queergo_rainbow_images_v1';
 let checkedIn = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
 let currentLocation = null;
 let activeId = null;
@@ -1499,7 +1927,9 @@ function initMap() {
 // ────────────────────────────────────────────
 // 启动
 // ────────────────────────────────────────────
-window.onload = () => {
+window.onload = function() {
+  loadRainbowImages(); // Load saved rainbow images first
+  
   if (typeof AMap !== 'undefined') {
     initMap();
   } else {
@@ -1519,5 +1949,567 @@ window.onload = () => {
       </div>`;
   }
 };
+
+// ═══════════════════════════════════════════
+//  Rainbow Flag Photo Collage
+// ═══════════════════════════════════════════
+// Load rainbow images from localStorage
+let rainbowImages = [null, null, null, null, null, null];
+let rainbowOriginals = [null, null, null, null, null, null];
+const rainbowColors = ['#FF3CAC', '#FF8C00', '#FFE000', '#00E676', '#00B4FF', '#AA00FF'];
+
+// Initialize rainbow images from localStorage
+function loadRainbowImages() {
+  const savedData = localStorage.getItem(RAINBOW_STORAGE_KEY);
+  if (savedData) {
+    try {
+      const parsed = JSON.parse(savedData);
+      rainbowImages = parsed.images || [null, null, null, null, null, null];
+      rainbowOriginals = parsed.originals || [null, null, null, null, null, null];
+      
+      // Update UI to show loaded images
+      rainbowImages.forEach(function(src, index) {
+        if (src) {
+          const slot = document.querySelectorAll('.rainbow-slot')[index];
+          if (slot) {
+            slot.classList.add('filled');
+            const img = slot.querySelector('.rainbow-slot-img');
+            if (img) {
+              img.src = src;
+            }
+          }
+        }
+      });
+    } catch (e) {
+      console.error('Failed to load rainbow images:', e);
+    }
+  }
+}
+
+// Save rainbow images to localStorage
+function saveRainbowImages() {
+  const dataToSave = {
+    images: rainbowImages,
+    originals: rainbowOriginals
+  };
+  localStorage.setItem(RAINBOW_STORAGE_KEY, JSON.stringify(dataToSave));
+}
+
+// ── FAB 拖动逻辑 ──
+(function() {
+  const fab = document.getElementById('rainbow-fab');
+  let isDragging = false;
+  let hasMoved = false;
+  let startX, startY, fabStartX, fabStartY;
+  const SNAP_THRESHOLD = 50; // 距离边缘50px时自动吸附
+  const BUTTON_SIZE = 54; // 按钮大小
+  const HIDE_AMOUNT = BUTTON_SIZE / 3; // 隐藏1/3，即18px
+
+  fab.addEventListener('touchstart', function(e) {
+    const touch = e.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+    const rect = fab.getBoundingClientRect();
+    fabStartX = rect.left;
+    fabStartY = rect.top;
+    hasMoved = false;
+    isDragging = true;
+    // 清除所有吸附状态
+    fab.classList.remove('snap-left', 'snap-right', 'snap-top', 'snap-bottom');
+    fab.style.transform = '';
+  }, { passive: true });
+
+  fab.addEventListener('touchmove', function(e) {
+    if (!isDragging) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      hasMoved = true;
+      fab.classList.add('dragging');
+      let newX = fabStartX + dx;
+      let newY = fabStartY + dy;
+      // 限制在屏幕范围内
+      newX = Math.max(0, Math.min(window.innerWidth - fab.offsetWidth, newX));
+      newY = Math.max(0, Math.min(window.innerHeight - fab.offsetHeight, newY));
+      fab.style.left = newX + 'px';
+      fab.style.top = newY + 'px';
+      fab.style.right = 'auto';
+      fab.style.bottom = 'auto';
+    }
+  }, { passive: true });
+
+  fab.addEventListener('touchend', function(e) {
+    isDragging = false;
+    fab.classList.remove('dragging');
+    
+    if (!hasMoved) {
+      openRainbowPanel();
+      return;
+    }
+    
+    // 计算最终位置并吸附到边缘
+    snapToEdge();
+    hasMoved = false;
+  });
+
+  fab.addEventListener('click', function(e) {
+    // 桌面端点击
+    if (!hasMoved) {
+      openRainbowPanel();
+    }
+    hasMoved = false;
+  });
+
+  // 鼠标支持（桌面端）
+  fab.addEventListener('mousedown', function(e) {
+    startX = e.clientX;
+    startY = e.clientY;
+    const rect = fab.getBoundingClientRect();
+    fabStartX = rect.left;
+    fabStartY = rect.top;
+    hasMoved = false;
+    isDragging = true;
+    // 清除所有吸附状态
+    fab.classList.remove('snap-left', 'snap-right', 'snap-top', 'snap-bottom');
+    fab.style.transform = '';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      hasMoved = true;
+      fab.classList.add('dragging');
+      let newX = fabStartX + dx;
+      let newY = fabStartY + dy;
+      // 限制在屏幕范围内
+      newX = Math.max(0, Math.min(window.innerWidth - fab.offsetWidth, newX));
+      newY = Math.max(0, Math.min(window.innerHeight - fab.offsetHeight, newY));
+      fab.style.left = newX + 'px';
+      fab.style.top = newY + 'px';
+      fab.style.right = 'auto';
+      fab.style.bottom = 'auto';
+    }
+  });
+
+  document.addEventListener('mouseup', function(e) {
+    if (!isDragging) return;
+    isDragging = false;
+    fab.classList.remove('dragging');
+    
+    if (!hasMoved) {
+      openRainbowPanel();
+      return;
+    }
+    
+    // 计算最终位置并吸附到边缘
+    snapToEdge();
+    hasMoved = false;
+  });
+
+  function snapToEdge() {
+    const rect = fab.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    
+    // 计算到各边缘的距离
+    const distToLeft = centerX;
+    const distToRight = screenWidth - centerX;
+    const distToTop = centerY;
+    const distToBottom = screenHeight - centerY;
+    
+    // 找出最近的边缘
+    const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+    
+    // 清除所有吸附类
+    fab.classList.remove('snap-left', 'snap-right', 'snap-top', 'snap-bottom');
+    
+    // 根据最近的边缘进行吸附
+    if (minDist === distToLeft || minDist === distToRight) {
+      // 左右边缘
+      if (distToLeft <= distToRight) {
+        // 吸附到左边
+        fab.style.left = '0px';
+        fab.style.right = 'auto';
+        fab.classList.add('snap-left');
+      } else {
+        // 吸附到右边
+        fab.style.right = '0px';
+        fab.style.left = 'auto';
+        fab.classList.add('snap-right');
+      }
+      
+      // 垂直位置保持不变
+      if (distToTop <= distToBottom) {
+        if (distToTop < SNAP_THRESHOLD) {
+          fab.style.top = '0px';
+          fab.style.bottom = 'auto';
+          fab.classList.add('snap-top');
+        }
+      } else {
+        if (distToBottom < SNAP_THRESHOLD) {
+          fab.style.bottom = '0px';
+          fab.style.top = 'auto';
+          fab.classList.add('snap-bottom');
+        }
+      }
+    } else {
+      // 上下边缘
+      if (distToTop <= distToBottom) {
+        // 吸附到顶部
+        fab.style.top = '0px';
+        fab.style.bottom = 'auto';
+        fab.classList.add('snap-top');
+      } else {
+        // 吸附到底部
+        fab.style.bottom = '0px';
+        fab.style.top = 'auto';
+        fab.classList.add('snap-bottom');
+      }
+      
+      // 水平位置保持不变
+      if (distToLeft <= distToRight) {
+        if (distToLeft < SNAP_THRESHOLD) {
+          fab.style.left = '0px';
+          fab.style.right = 'auto';
+          fab.classList.add('snap-left');
+        }
+      } else {
+        if (distToRight < SNAP_THRESHOLD) {
+          fab.style.right = '0px';
+          fab.style.left = 'auto';
+          fab.classList.add('snap-right');
+        }
+      }
+    }
+  }
+})();
+
+function updateSlotLocks() {
+  var slots = document.querySelectorAll('.rainbow-slot');
+  // 找到第一个未上传的索引
+  var nextIndex = rainbowImages.findIndex(function(img) { return !img; });
+  if (nextIndex === -1) nextIndex = 6; // 全部已上传
+  slots.forEach(function(slot, i) {
+    if (i < nextIndex) {
+      // 已上传的，允许重新裁剪/上传
+      slot.classList.remove('locked');
+    } else if (i === nextIndex) {
+      // 当前需要上传的
+      slot.classList.remove('locked');
+    } else {
+      // 还没轮到的
+      slot.classList.add('locked');
+    }
+  });
+}
+
+function openRainbowPanel() {
+  document.getElementById('rainbow-panel').classList.add('active');
+  document.getElementById('rainbow-panel-overlay').classList.add('active');
+  document.getElementById('rainbow-fab').style.display = 'none';
+  updateRainbowPreview();
+  updateSlotLocks();
+}
+
+function closeRainbowPanel() {
+  document.getElementById('rainbow-panel').classList.remove('active');
+  document.getElementById('rainbow-panel-overlay').classList.remove('active');
+  document.getElementById('rainbow-fab').style.display = 'flex';
+}
+
+// ── 裁剪相关变量 ──
+var cropState = {
+  index: -1,
+  imgSrc: '',
+  naturalW: 0,
+  naturalH: 0,
+  bandY: 0,       // 选区顶部位置（相对于容器，px）
+  bandH: 0,       // 选区高度（px）
+  containerH: 0,
+  dragging: false,
+  dragStartY: 0,
+  dragStartBandY: 0
+};
+
+function handleRainbowUpload(event, index) {
+  var file = event.target.files[0];
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    cropState.index = index;
+    cropState.imgSrc = e.target.result;
+    rainbowOriginals[index] = e.target.result;
+
+    var img = new Image();
+    img.onload = function() {
+      cropState.naturalW = img.width;
+      cropState.naturalH = img.height;
+      openCropUI(e.target.result);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function openCropUI(src) {
+  var overlay = document.getElementById('crop-overlay');
+  var cropImg = document.getElementById('crop-img');
+  cropImg.src = src;
+  overlay.classList.add('active');
+
+  // 等图片加载后初始化选区
+  cropImg.onload = function() {
+    // 用图片实际显示高度，而非容器高度
+    cropState.displayH = cropImg.offsetHeight;
+    cropState.containerH = cropState.displayH;
+    // 选区高度按最终条纹比例（宽:高 = 6:1）
+    var containerW = document.getElementById('crop-container').offsetWidth;
+    cropState.bandH = Math.round(containerW / 6);
+    // 默认居中
+    cropState.bandY = Math.round((cropState.displayH - cropState.bandH) / 2);
+    updateCropUI();
+    initCropDrag();
+  };
+}
+
+function updateCropUI() {
+  var band = document.getElementById('crop-band');
+  var maskTop = document.getElementById('crop-mask-top');
+  var maskBottom = document.getElementById('crop-mask-bottom');
+
+  band.style.top = cropState.bandY + 'px';
+  band.style.height = cropState.bandH + 'px';
+  maskTop.style.height = cropState.bandY + 'px';
+  maskBottom.style.height = (cropState.containerH - cropState.bandY - cropState.bandH) + 'px';
+}
+
+function initCropDrag() {
+  var band = document.getElementById('crop-band');
+
+  band.addEventListener('touchstart', function(e) {
+    cropState.dragging = true;
+    cropState.dragStartY = e.touches[0].clientY;
+    cropState.dragStartBandY = cropState.bandY;
+    e.preventDefault();
+  });
+
+  band.addEventListener('touchmove', function(e) {
+    if (!cropState.dragging) return;
+    var dy = e.touches[0].clientY - cropState.dragStartY;
+    var newY = cropState.dragStartBandY + dy;
+    newY = Math.max(0, Math.min(cropState.containerH - cropState.bandH, newY));
+    cropState.bandY = newY;
+    updateCropUI();
+    e.preventDefault();
+  });
+
+  band.addEventListener('touchend', function() {
+    cropState.dragging = false;
+  });
+
+  // 鼠标支持（电脑端）
+  band.addEventListener('mousedown', function(e) {
+    cropState.dragging = true;
+    cropState.dragStartY = e.clientY;
+    cropState.dragStartBandY = cropState.bandY;
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!cropState.dragging) return;
+    var dy = e.clientY - cropState.dragStartY;
+    var newY = cropState.dragStartBandY + dy;
+    newY = Math.max(0, Math.min(cropState.containerH - cropState.bandH, newY));
+    cropState.bandY = newY;
+    updateCropUI();
+  });
+
+  document.addEventListener('mouseup', function() {
+    cropState.dragging = false;
+  });
+}
+
+function confirmCrop() {
+  var index = cropState.index;
+  // 将图片显示坐标映射回原图坐标
+  var scale = cropState.naturalH / cropState.displayH;
+  var srcY = Math.round(cropState.bandY * scale);
+  var srcH = Math.round(cropState.bandH * scale);
+
+  var img = new Image();
+  img.onload = function() {
+    var canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = srcH;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, srcY, img.width, srcH, 0, 0, img.width, srcH);
+
+    var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    rainbowImages[index] = dataUrl;
+
+    var slot = document.querySelectorAll('.rainbow-slot')[index];
+    slot.classList.add('filled');
+    const slotImg = slot.querySelector('.rainbow-slot-img');
+    slotImg.src = dataUrl;
+
+    // Save to localStorage
+    saveRainbowImages();
+    
+    updateSlotLocks();
+    updateRainbowPreview();
+    closeCropUI();
+  };
+  img.src = cropState.imgSrc;
+}
+
+function cancelCrop() {
+  closeCropUI();
+}
+
+function reuploadSlot(el) {
+  var slot = el.closest('.rainbow-slot');
+  var input = slot.querySelector('input[type="file"]');
+  input.click();
+}
+
+function recropSlot(el) {
+  // 找到这个按钮属于第几个 slot
+  var slot = el.closest('.rainbow-slot');
+  var index = parseInt(slot.getAttribute('data-color'));
+  var originalSrc = rainbowOriginals[index];
+  if (!originalSrc) return;
+
+  cropState.index = index;
+  cropState.imgSrc = originalSrc;
+
+  var img = new Image();
+  img.onload = function() {
+    cropState.naturalW = img.width;
+    cropState.naturalH = img.height;
+    openCropUI(originalSrc);
+  };
+  img.src = originalSrc;
+}
+
+function closeCropUI() {
+  document.getElementById('crop-overlay').classList.remove('active');
+  cropState.index = -1;
+  cropState.imgSrc = '';
+}
+
+function updateRainbowPreview() {
+  const canvas = document.getElementById('rainbow-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const stripH = canvas.height / 6;
+
+  let filledCount = 0;
+  let drawn = 0;
+
+  // Grey shades for unfilled slots (light to dark)
+  var greyShades = ['#d9d9d9', '#c2c2c2', '#ababab', '#949494', '#7d7d7d', '#666666'];
+
+  // First pass: draw grey for empty, color for filled
+  rainbowColors.forEach(function(color, i) {
+    if (rainbowImages[i]) {
+      filledCount++;
+    }
+    ctx.fillStyle = rainbowImages[i] ? color : greyShades[i];
+    ctx.fillRect(0, i * stripH, w, stripH);
+  });
+
+  // Second pass: draw uploaded images
+  if (filledCount === 0) {
+    updateSaveButton(filledCount);
+    return;
+  }
+
+  let pending = filledCount;
+  rainbowImages.forEach(function(src, i) {
+    if (!src) return;
+    const img = new Image();
+    img.onload = function() {
+      // cover 方式填满条纹
+      var imgAspect = img.width / img.height;
+      var slotAspect = w / stripH;
+      var sx = 0, sy = 0, sw = img.width, sh = img.height;
+      if (imgAspect > slotAspect) {
+        sw = img.height * slotAspect;
+        sx = (img.width - sw) / 2;
+      } else {
+        sh = img.width / slotAspect;
+        sy = (img.height - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, i * stripH, w, stripH);
+      pending--;
+      if (pending === 0) updateSaveButton(filledCount);
+    };
+    img.src = src;
+  });
+}
+
+function updateSaveButton(filledCount) {
+  const btn = document.getElementById('rainbow-save-btn');
+  if (filledCount === 6) {
+    btn.classList.add('ready');
+    btn.textContent = '保存属于你的彩虹旗 🏳️‍🌈';
+  } else {
+    btn.classList.remove('ready');
+    btn.textContent = '还需 ' + (6 - filledCount) + ' 张照片';
+  }
+}
+
+function saveRainbowFlag() {
+  if (rainbowImages.some(function(img) { return !img; })) return;
+
+  // Build a high-res composite
+  const outCanvas = document.createElement('canvas');
+  const outW = 1200;
+  const stripH = 200;
+  outCanvas.width = outW;
+  outCanvas.height = stripH * 6;
+  const ctx = outCanvas.getContext('2d');
+
+  let pending = 6;
+  rainbowImages.forEach(function(src, i) {
+    const img = new Image();
+    img.onload = function() {
+      // cover 方式填满条纹
+      var imgAspect = img.width / img.height;
+      var slotAspect = outW / stripH;
+      var sx = 0, sy = 0, sw = img.width, sh = img.height;
+      if (imgAspect > slotAspect) {
+        sw = img.height * slotAspect;
+        sx = (img.width - sw) / 2;
+      } else {
+        sh = img.width / slotAspect;
+        sy = (img.height - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, i * stripH, outW, stripH);
+      pending--;
+      if (pending === 0) {
+        // 生成图片并弹出预览，用户可长按保存
+        var dataUrl = outCanvas.toDataURL('image/png');
+        var saveOverlay = document.createElement('div');
+        saveOverlay.style.cssText = 'position:fixed;inset:0;z-index:950;background:rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
+        saveOverlay.innerHTML = '<div style="color:#fff;font-size:16px;font-weight:600;margin-bottom:16px;">你的彩虹旗 🏳️‍🌈</div>'
+          + '<div style="color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:16px;">长按图片保存到相册</div>'
+          + '<img src="' + dataUrl + '" style="max-width:90%;max-height:60vh;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);">'
+          + '<button onclick="this.parentElement.remove()" style="margin-top:20px;padding:12px 32px;border:none;border-radius:12px;background:rgba(255,255,255,0.2);color:#fff;font-size:15px;font-weight:600;cursor:pointer;">关闭</button>';
+        document.body.appendChild(saveOverlay);
+      }
+    };
+    img.src = src;
+  });
+}
 </script>
 </html>
